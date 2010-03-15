@@ -66,6 +66,7 @@ class Pooler(threading.Thread):
         new_server = ()
         games_ended = False
         
+        self.broadcast_socket.settimeout(self.timeout)
         #phase 2, try to fetch some responses:
         while waiting_for_response:
             tmp_games_added = False
@@ -78,6 +79,7 @@ class Pooler(threading.Thread):
                     games_added = tmp_games_added
                 if (not new_server):
                     new_server = tmp_newserver
+                self.broadcast_socket.settimeout(0.1)
             except socket.timeout:
                 waiting_for_response = False
         games_ended = self.filter_obsolete()
