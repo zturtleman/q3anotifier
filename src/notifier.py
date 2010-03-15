@@ -23,7 +23,13 @@ class Notifier(threading.Thread):
     FIRST_ID = 1023
     ID_QUIT = 2048
     ID_ABOUT = 2049
-
+    GAME_TYPES = {
+                  0: "Free For All",
+                  1: "Tournament One-on-One",
+                  2: "Single Player",
+                  3: "Team Deathmatch",
+                  4: "Capture The Flag"
+                  }
     
     def __init__(self,
                  icon,
@@ -103,7 +109,7 @@ class Notifier(threading.Thread):
 
     def notify(self, hwnd, msg, wparam, lparam):
         if lparam==win32con.WM_LBUTTONDBLCLK:
-            pass
+            self.find_or_create_game()
         elif lparam==win32con.WM_RBUTTONUP:
             self.show_menu()
         elif lparam==win32con.WM_LBUTTONUP:
@@ -148,7 +154,8 @@ class Notifier(threading.Thread):
                 id_counter+=1
         
             for id in self.ids_to_addresses.keys():
-                item, extras = win32gui_struct.PackMENUITEMINFO(text=self.format_game_text(self.ids_to_addresses[id]),
+                game_text, game_type = self.format_game_text(self.ids_to_addresses[id])
+                item, extras = win32gui_struct.PackMENUITEMINFO(text=game_text,
                                                                 wID=id)
                 win32gui.InsertMenuItem(menu, position, 1, item)
                 position+=1
@@ -175,16 +182,17 @@ class Notifier(threading.Thread):
     def display_baloon(self, address):
         self.baloon_address = address
         game_description = ""
+        game_type = ""
         with self.game_list_lock:
-            game_description = self.format_game_text(address)
-        
+            (game_description, game_type) = self.format_game_text(address)
+            
         my_notify = (self.hwnd,
             0,
             win32gui.NIF_INFO,
             0,
             self.icon,
             "",
-            "New game detected, click to join.\n%s\nIP: %s" % (game_description, address[0]),
+            "New game detected, click to join.\n%s\nIP: %s%s" % (game_description, address[0],game_type),
             5000,
             "Quake announcement",
             0x00000004)
@@ -192,13 +200,33 @@ class Notifier(threading.Thread):
     
     def format_game_text(self, address):
         in_text = self.game_list[address]
-        return "%s, map: %s, free slots: %d / %d" % (
+        game_type = ""
+        
+        game_description = "%s, map: %s, free slots: %d / %d" % (
             in_text['hostname'],
             in_text['mapname'],
             int(in_text['sv_maxclients']) - int(in_text['clients']),
             int(in_text['sv_maxclients']))
-
+        if self.GAME_TYPES.has_key(int(in_text['gametype'])):
+            game_type = "\n" + self.GAME_TYPES[int(in_text['gametype'])]
+        
+        return (game_description, game_type)
+    
     def update_gamelist(self, new_game_list):
         with self.game_list_lock:
             del self.game_list
             self.game_list = copy.deepcopy(new_game_list)
+
+    def find_or_create_game(self):
+        with self.game_list_lock:
+            available_games = list()
+            for (addr, gameinfo) in self.game_list.items():
+                if gameinfo['sv_maxclients'] > gameinfo['clients']:
+                    if gameinfo['gametype'] > 0:
+                        available_games.append(addr)
+                    else:
+                        available_games.insert(0, addr)
+        if available_games:
+            self.quake_starter(*available_games[0])
+        else:
+            self.quake_starter(None, None) # start server

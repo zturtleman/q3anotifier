@@ -12,7 +12,11 @@ class Controller:
     def start_quake(self, address, port):
         quake_exe = os.path.basename(self.QUAKEPATH)
         os.chdir(os.path.dirname(self.QUAKEPATH))
-        os.system("\"%s\" +connect %s:%d" % (quake_exe, address, port))
+        
+        if not address is None:
+            os.system("\"%s\" +connect %s:%d" % (quake_exe, address, port))
+        else:
+            os.system("\"%s\" +map %s" % (quake_exe, self.defaultmap) )
         
     def configure(self):
         config = ConfigParser.RawConfigParser()
@@ -27,6 +31,9 @@ class Controller:
         
             if (config.has_option("q3anotifier", "timeout")):
                 self.timeout = config.getint("q3anotifier", "timeout")
+
+            if (config.has_option("q3anotifier", "defaultmap")):
+                self.defaultmap = config.get("q3anotifier", "defaultmap")
                 
         except (IOError, NoSectionError):
             pass
@@ -44,11 +51,12 @@ class Controller:
                 if not config.has_section("q3anotifier"):
                     config.add_section("q3anotifier")
                 config.set("q3anotifier", "quake3.exe", fname)
-                config.set("q3anotifier", "timeout", self.timeout)
             except:
                 sys.exit(1)
     
         try:
+            config.set("q3anotifier", "timeout", self.timeout)
+            config.set("q3anotifier", "defaultmap", self.defaultmap)
             config_file = file(local_path, "w")
             config.write(config_file)
             config_file.close()
@@ -61,6 +69,7 @@ class Controller:
     
     def __init__(self):
         self.QUAKEPATH = ""
+        self.defaultmap = "q3dm17"
         self.timeout = 3
         self.configure()
         
