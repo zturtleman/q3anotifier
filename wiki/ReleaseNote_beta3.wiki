@@ -1,7 +1,19 @@
 #summary Release notes for q3anotifier-beta3
 #labels ReleaseNote
 
+== Introduction ==
+
+Thanks for using q3anotifier!
+
+Here you can file problem reports and feature requests: http://code.google.com/p/q3anotifier/issues/list
+
 == Highlights ==
 
+New in this version:
+
+* autostart feature
+* about dialog (this page)
 
 == Known problems ==
+
+This was not really tested yet... :-)
