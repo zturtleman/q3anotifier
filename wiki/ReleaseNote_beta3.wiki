@@ -5,7 +5,7 @@
 
 Thanks for using q3anotifier!
 
-Here you can file problem reports and feature requests: http://code.google.com/p/q3anotifier/issues/list
+Please file problem reports and feature requests here: http://code.google.com/p/q3anotifier/issues/list
 
 == Highlights ==
 
