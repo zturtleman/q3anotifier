@@ -6,6 +6,9 @@ import win32gui
 import win32gui_struct
 import sys
 import ConfigParser
+import _winreg
+import webbrowser
+
 from ConfigParser import NoSectionError
 
 class Controller:    
@@ -17,7 +20,36 @@ class Controller:
             os.system("\"%s\" +connect %s:%d" % (quake_exe, address, port))
         else:
             os.system("\"%s\" +map %s" % (quake_exe, self.defaultmap) )
+    
+    def autostart_enabled(self):
+        ret = True
+        try:
+            hKey = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Run')
+            value, type = _winreg.QueryValueEx(hKey, r'q3anotifier')
+        except WindowsError:
+            ret = False
         
+        return ret
+    
+    def about_page(self):
+        webbrowser.open("%s/wiki/ReleaseNote_%s" % (self.project_page, self.version),2 ,True)
+            
+    def toggle_autostart(self):
+        if self.autostart_enabled():
+            try:
+                hKey = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Run', 0, _winreg.KEY_ALL_ACCESS)
+                _winreg.DeleteValue(hKey, r'q3anotifier')
+                _winreg.CloseKey(hKey)
+            except WindowsError:
+                raise
+        else:
+            try:
+                hKey = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Run', 0, _winreg.KEY_ALL_ACCESS)
+                _winreg.SetValueEx(hKey, r'q3anotifier', 0, _winreg.REG_SZ, "\"%s\"" % sys.argv[0])
+                _winreg.CloseKey(hKey)
+            except WindowsError:
+                raise
+            
     def configure(self):
         config = ConfigParser.RawConfigParser()
         local_path = "%s/q3anotifier.ini" % os.path.dirname(sys.argv[0])
@@ -57,6 +89,7 @@ class Controller:
         try:
             config.set("q3anotifier", "timeout", self.timeout)
             config.set("q3anotifier", "defaultmap", self.defaultmap)
+            config.set("q3anotifier", "createdwith", self.version)
             config_file = file(local_path, "w")
             config.write(config_file)
             config_file.close()
@@ -71,10 +104,15 @@ class Controller:
         self.QUAKEPATH = ""
         self.defaultmap = "q3dm17"
         self.timeout = 3
+        self.project_page = "http://code.google.com/p/q3anotifier"
+        self.version = "beta3"
         self.configure()
+
         
+        if(self.timeout < 3):
+            self.timeout = 3
         evt_gui_ready = threading.Event()
-        myGUI = notifier.Notifier(self.QUAKEPATH, None, 1, evt_gui_ready, self.start_quake)
+        myGUI = notifier.Notifier(self.QUAKEPATH, None, 1, evt_gui_ready, self)
         myPooler = pooler.Pooler(timeout = self.timeout)
         myPooler.register_Notifier(myGUI)
         

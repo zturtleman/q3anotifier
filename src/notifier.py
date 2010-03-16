@@ -23,6 +23,8 @@ class Notifier(threading.Thread):
     FIRST_ID = 1023
     ID_QUIT = 2048
     ID_ABOUT = 2049
+    ID_AUTOSTART = 2050
+    
     GAME_TYPES = {
                   0: "Free For All",
                   1: "Tournament One-on-One",
@@ -36,7 +38,7 @@ class Notifier(threading.Thread):
                  on_quit,
                  default_menu_index,
                  evt_gui_ready,
-                 quake_starter
+                 controller
                  ):
         
         self.evt_gui_ready = evt_gui_ready
@@ -51,8 +53,11 @@ class Notifier(threading.Thread):
         self.window_class_name = "q3anotifier"
         self.ids_to_addresses = dict()
         self.baloon_address = None
-        self.quake_starter = quake_starter
+        self.quake_starter = controller.start_quake
+        self.controller = controller
+        self.menu_counters = dict()
         threading.Thread.__init__(self)
+        
         
     def run(self):
         message_map = {win32gui.RegisterWindowMessage("TaskbarCreated"): self.restart,
@@ -139,8 +144,16 @@ class Notifier(threading.Thread):
         except:
             pass
     
+    def add_item_to_menu(self, *args, **kwargs):
+        menu = args[0]
+        item, extras = win32gui_struct.PackMENUITEMINFO(**kwargs)
+        win32gui.InsertMenuItem(menu, self.menu_counters[menu], 1, item)
+        self.menu_counters[menu] += 1
+    
     def create_menu(self, menu):
-        position = 0
+        menu_items = list()
+        self.menu_counters[menu]=0
+        
         with self.game_list_lock:
             if self.ids_to_addresses:
                 del self.ids_to_addresses
@@ -153,24 +166,31 @@ class Notifier(threading.Thread):
                 self.ids_to_addresses[id_counter] = address
                 id_counter+=1
         
-            for id in self.ids_to_addresses.keys():
+            for id in self.ids_to_addresses.keys():                
                 game_text, game_type = self.format_game_text(self.ids_to_addresses[id])
-                item, extras = win32gui_struct.PackMENUITEMINFO(text=game_text,
-                                                                wID=id)
-                win32gui.InsertMenuItem(menu, position, 1, item)
-                position+=1
-                
+                self.add_item_to_menu(text=game_text, wID=id)
+
         
         if not self.ids_to_addresses:
-            item, extras = win32gui_struct.PackMENUITEMINFO(text = "No games found.", fState = win32con.MFS_DISABLED)
-            win32gui.InsertMenuItem(menu, position, 1, item)
-            position+=1
+            self.add_item_to_menu(menu, text = "No games found.", fState = win32con.MFS_DISABLED)
         
-        item, extras = win32gui_struct.PackMENUITEMINFO(fType = win32con.MFT_SEPARATOR)
-        win32gui.InsertMenuItem(menu, position, 1, item)
-        position+=1
-        item, extras = win32gui_struct.PackMENUITEMINFO(text="Exit", wID=self.ID_QUIT)
-        win32gui.InsertMenuItem(menu, position, 1, item)
+        self.add_item_to_menu(menu, fType = win32con.MFT_SEPARATOR)
+
+        submenu = self.prepare_options_submenu()
+        self.add_item_to_menu(menu, hSubMenu = submenu, text = "Options")
+        self.add_item_to_menu(menu, text="Exit", wID=self.ID_QUIT)
+
+    def prepare_options_submenu(self):
+        submenu = win32gui.CreatePopupMenu()
+        autostart_status = win32con.MFS_UNCHECKED
+        
+        if (self.controller.autostart_enabled()):
+            autostart_status = win32con.MFS_CHECKED
+      
+        self.menu_counters[submenu]=0
+        self.add_item_to_menu(submenu, wID = self.ID_ABOUT, text="About...")
+        self.add_item_to_menu(submenu, fState = autostart_status, wID=self.ID_AUTOSTART, text = "Autostart")
+        return submenu
 
     def command(self, hwnd, msg, wparam, lparam):
         id = win32gui.LOWORD(wparam)
@@ -178,6 +198,10 @@ class Notifier(threading.Thread):
             self.quake_starter(*self.ids_to_addresses[id])
         elif id == self.ID_QUIT:
             win32gui.DestroyWindow(self.hwnd)
+        elif id == self.ID_AUTOSTART:
+            self.controller.toggle_autostart()
+        elif id == self.ID_ABOUT:
+            self.controller.about_page()
 
     def display_baloon(self, address):
         self.baloon_address = address
