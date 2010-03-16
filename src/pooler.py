@@ -1,6 +1,7 @@
 import threading
 import socket
 import notifier
+import time
 
 MY_IDENTIFIER="q3anotifier"
 MAX_INFO_STRING=1024 # from q3a sources
@@ -11,7 +12,7 @@ class Pooler(threading.Thread):
         self.broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.broadcast_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.timeout = timeout
-        self.broadcast_socket.settimeout(self.timeout)
+        self.broadcast_socket.settimeout(0.1)
         self.loop = True
         self.current_games = dict()
         self.game_list_lock = None
@@ -66,7 +67,6 @@ class Pooler(threading.Thread):
         new_server = ()
         games_ended = False
         
-        self.broadcast_socket.settimeout(self.timeout)
         #phase 2, try to fetch some responses:
         while waiting_for_response:
             tmp_games_added = False
@@ -79,7 +79,6 @@ class Pooler(threading.Thread):
                     games_added = tmp_games_added
                 if (not new_server):
                     new_server = tmp_newserver
-                self.broadcast_socket.settimeout(0.1)
             except socket.timeout:
                 waiting_for_response = False
         games_ended = self.filter_obsolete()
@@ -89,6 +88,8 @@ class Pooler(threading.Thread):
         if new_server:
             if self.notifier.isAlive():
                 self.notifier.display_baloon(new_server)
+
+        time.sleep(self.timeout)
     
     def register_Notifier(self, notifier):
         self.notifier = notifier
