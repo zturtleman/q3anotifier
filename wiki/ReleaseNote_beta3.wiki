@@ -11,8 +11,8 @@ Please file problem reports and feature requests here: http://code.google.com/p/
 
 New in this version:
 
-* autostart feature
-* about dialog (this page)
+ * autostart feature
+ * about dialog (this page)
 
 == Known problems ==
 
