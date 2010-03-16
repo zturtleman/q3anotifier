@@ -1,0 +1,10 @@
+#summary Peer-to-peer notification concept
+#labels Phase-Design
+
+= Introduction =
+
+To be defined.
+
+= Details =
+
+To be defined.
