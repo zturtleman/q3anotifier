@@ -50,7 +50,6 @@ class Notifier(threading.Thread):
         self.icon = hicon[0]
         self.game_list = dict()
         self.game_list_lock = threading.Lock()
-        self.window_class_name = "q3anotifier"
         self.ids_to_addresses = dict()
         self.baloon_address = None
         self.quake_starter = controller.start_quake
@@ -67,7 +66,7 @@ class Notifier(threading.Thread):
         # Register the Window class.
         window_class = win32gui.WNDCLASS()
         hinst = window_class.hInstance = win32gui.GetModuleHandle(None)
-        window_class.lpszClassName = self.window_class_name
+        window_class.lpszClassName = self.controller.CLASSNAME
         window_class.style = win32con.CS_VREDRAW | win32con.CS_HREDRAW;
         window_class.hCursor = win32gui.LoadCursor(0, win32con.IDC_ARROW)
         window_class.hbrBackground = win32con.COLOR_WINDOW
@@ -76,7 +75,7 @@ class Notifier(threading.Thread):
         # Create the Window.
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
         self.hwnd = win32gui.CreateWindow(classAtom,
-                                          self.window_class_name,
+                                          self.controller.CLASSNAME,
                                           style,
                                           0,
                                           0,
@@ -168,7 +167,7 @@ class Notifier(threading.Thread):
         
             for id in self.ids_to_addresses.keys():                
                 game_text, game_type = self.format_game_text(self.ids_to_addresses[id])
-                self.add_item_to_menu(text=game_text, wID=id)
+                self.add_item_to_menu(menu, text=game_text, wID=id)
 
         
         if not self.ids_to_addresses:
