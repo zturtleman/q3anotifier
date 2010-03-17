@@ -11,8 +11,8 @@ Please file problem reports and feature requests here: http://code.google.com/p/
 
 New in this version:
 
- - bugfix for right-click menu
- - bugfix for multiple instances
+ * bugfix for right-click menu
+ * bugfix for multiple instances
 
 See release notes for previous version: ReleaseNotes_beta3
 
