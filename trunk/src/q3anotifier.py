@@ -8,10 +8,25 @@ import sys
 import ConfigParser
 import _winreg
 import webbrowser
+import pywintypes
 
 from ConfigParser import NoSectionError
 
-class Controller:    
+class Controller:
+    
+    def check_if_already_running(self):
+        running = True
+        try:
+            ret = win32gui.FindWindow(self.CLASSNAME, None)
+            if not ret:
+                running = False
+        except:
+            #Sometimes this is reported as an exception...
+            running = False
+        
+        if (running):
+            sys.exit()
+    
     def start_quake(self, address, port):
         quake_exe = os.path.basename(self.QUAKEPATH)
         os.chdir(os.path.dirname(self.QUAKEPATH))
@@ -101,11 +116,14 @@ class Controller:
     
     
     def __init__(self):
+        self.CLASSNAME = "q3anotifier"
         self.QUAKEPATH = ""
         self.defaultmap = "q3dm17"
         self.timeout = 3
         self.project_page = "http://code.google.com/p/q3anotifier"
-        self.version = "beta3"
+        self.version = "beta3a"
+        
+        self.check_if_already_running()
         self.configure()
 
         
