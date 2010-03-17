@@ -16,4 +16,6 @@ New in this version:
 
 == Known problems ==
 
+ - right-click menu was broken with this release.
+
 This was not really tested yet... :-)
