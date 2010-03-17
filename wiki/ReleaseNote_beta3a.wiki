@@ -14,6 +14,6 @@ New in this version:
  * bugfix for right-click menu
  * bugfix for multiple instances
 
-See release notes for previous version: ReleaseNotes_beta3
+See also [http://code.google.com/p/q3anotifier/wiki/ReleaseNote_beta3a release notes for previous version].
 
 == Known problems ==
