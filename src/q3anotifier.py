@@ -29,15 +29,14 @@ class Controller:
     
     def start_quake(self, address, port):
         quake_exe = os.path.basename(self.QUAKEPATH)
-        os.chdir(os.path.dirname(self.QUAKEPATH))
-        
+        os.chdir(os.path.dirname(self.QUAKEPATH))        
         run_str = ""
         
         if not address is None:
             run_str = "\"%s\" %s +connect %s:%d" % (quake_exe, self.cmd_extra_args, address, port)
         else:
             run_str = "\"%s\" %s +map %s" % (quake_exe, self.cmd_extra_args, self.defaultmap)    
-        print "%s" % (run_str)
+
         os.system(run_str)
     
     def autostart_enabled(self):

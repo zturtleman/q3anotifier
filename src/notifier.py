@@ -24,6 +24,10 @@ class Notifier(threading.Thread):
     ID_QUIT = 2048
     ID_ABOUT = 2049
     ID_AUTOSTART = 2050
+    BALOON_TIMEOUT = 1
+    MSG_NOTIFYICON = win32con.WM_USER+20
+    MSG_POOLER = win32con.WM_USER+21
+    MSG_SERVERREMOVED = 1
     
     GAME_TYPES = {
                   0: "Free For All",
@@ -59,10 +63,12 @@ class Notifier(threading.Thread):
         
         
     def run(self):
-        message_map = {win32gui.RegisterWindowMessage("TaskbarCreated"): self.restart,
+        message_map = {
            win32con.WM_DESTROY: self.destroy,
            win32con.WM_COMMAND: self.command,
-           win32con.WM_USER+20: self.notify,}
+           self.MSG_NOTIFYICON: self.notify,
+           self.MSG_POOLER: self.msg_pooler
+        }
         # Register the Window class.
         window_class = win32gui.WNDCLASS()
         hinst = window_class.hInstance = win32gui.GetModuleHandle(None)
@@ -91,6 +97,7 @@ class Notifier(threading.Thread):
         self.evt_gui_ready.set()
         win32gui.PumpMessages()
         
+        
     def refresh_icon(self):
         if self.notify_id: message = win32gui.NIM_MODIFY
         else: message = win32gui.NIM_ADD
@@ -102,8 +109,9 @@ class Notifier(threading.Thread):
                           self.hover_text)
         win32gui.Shell_NotifyIcon(message, self.notify_id)
         
-    def restart(self, hwnd, msg, wparam, lparam):
-        self.refresh_icon()
+#    def restart(self, hwnd, msg, wparam, lparam):
+#        print "Self.restart?"
+#        self.refresh_icon()
 
     def destroy(self, hwnd, msg, wparam, lparam):
         if self.on_quit: self.on_quit(self)
@@ -122,6 +130,18 @@ class Notifier(threading.Thread):
             if callable(self.quake_starter):
                 self.quake_starter(*self.baloon_address)
         return True
+
+    def msg_pooler(self, hwnd, msg, wparam, lparam):
+        if lparam==self.MSG_SERVERREMOVED:
+        # if some server is removed we have to assure there are no
+        # obsolete baloon tool-tips. if a baloon is displayed its associated
+        # game server address will be stored in self.baloon_address. 
+
+            with self.game_list_lock:
+                if self.baloon_address not in self.game_list.keys():
+                    self.hide_baloon()
+        else:
+            pass
         
     def show_menu(self):
         menu = win32gui.CreatePopupMenu()
@@ -216,8 +236,21 @@ class Notifier(threading.Thread):
             self.icon,
             "",
             "New game detected, click to join.\n%s\nIP: %s%s" % (game_description, address[0],game_type),
-            5000,
+            self.BALOON_TIMEOUT*1000,
             "Quake announcement",
+            0x00000004)
+        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, my_notify)
+        
+    def hide_baloon(self):
+        my_notify = (self.hwnd,
+            0,
+            win32gui.NIF_INFO,
+            0,
+            self.icon,
+            "",
+            "",
+            self.BALOON_TIMEOUT*1000,
+            "",
             0x00000004)
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, my_notify)
     
