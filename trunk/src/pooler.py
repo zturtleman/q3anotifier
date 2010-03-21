@@ -2,10 +2,11 @@ import threading
 import socket
 import notifier
 import time
+import win32api
 
 MY_IDENTIFIER="q3anotifier"
 MAX_INFO_STRING=1024 # from q3a sources
-PING_ATTEMPTS=3 #ping attempts before removing server from the list
+PING_ATTEMPTS=2 #ping attempts before removing server from the list
 
 class Pooler(threading.Thread):
     def __init__(self, timeout):
@@ -82,8 +83,12 @@ class Pooler(threading.Thread):
             except socket.timeout:
                 waiting_for_response = False
         games_ended = self.filter_obsolete()
+
         if games_ended or games_added:
             self.notifier.update_gamelist(self.current_games)
+        
+        if games_ended:
+            win32api.SendMessage(self.notifier.hwnd, self.notifier.MSG_POOLER, None, self.notifier.MSG_SERVERREMOVED)
         
         if new_server:
             if self.notifier.isAlive():
