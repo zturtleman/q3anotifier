@@ -31,10 +31,14 @@ class Controller:
         quake_exe = os.path.basename(self.QUAKEPATH)
         os.chdir(os.path.dirname(self.QUAKEPATH))
         
+        run_str = ""
+        
         if not address is None:
-            os.system("\"%s\" +connect %s:%d" % (quake_exe, address, port))
+            run_str = "\"%s\" %s +connect %s:%d" % (quake_exe, self.cmd_extra_args, address, port)
         else:
-            os.system("\"%s\" +map %s" % (quake_exe, self.defaultmap) )
+            run_str = "\"%s\" %s +map %s" % (quake_exe, self.cmd_extra_args, self.defaultmap)    
+        print "%s" % (run_str)
+        os.system(run_str)
     
     def autostart_enabled(self):
         ret = True
@@ -76,11 +80,14 @@ class Controller:
             tmp_quake_path = config.get("q3anotifier", "quake3.exe")
             config_file.close()
         
-            if (config.has_option("q3anotifier", "timeout")):
+            if config.has_option("q3anotifier", "timeout"):
                 self.timeout = config.getint("q3anotifier", "timeout")
 
-            if (config.has_option("q3anotifier", "defaultmap")):
+            if config.has_option("q3anotifier", "defaultmap"):
                 self.defaultmap = config.get("q3anotifier", "defaultmap")
+                
+            if config.has_option("q3anotifier", "cmd_extra_args"):
+                self.cmd_extra_args = config.get("q3anotifier", "cmd_extra_args")
                 
         except (IOError, NoSectionError):
             pass
@@ -105,6 +112,7 @@ class Controller:
             config.set("q3anotifier", "timeout", self.timeout)
             config.set("q3anotifier", "defaultmap", self.defaultmap)
             config.set("q3anotifier", "createdwith", self.version)
+            config.set("q3anotifier", "cmd_extra_args", self.cmd_extra_args)
             config_file = file(local_path, "w")
             config.write(config_file)
             config_file.close()
@@ -119,6 +127,7 @@ class Controller:
         self.CLASSNAME = "q3anotifier"
         self.QUAKEPATH = ""
         self.defaultmap = "q3dm17"
+        self.cmd_extra_args = ""
         self.timeout = 3
         self.project_page = "http://code.google.com/p/q3anotifier"
         self.version = "beta3a"
